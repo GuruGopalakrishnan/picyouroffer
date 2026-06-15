@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cash Creators AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f0f0f; color: #f0f0f0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+    #header { background: #1a1a1a; border-bottom: 1px solid #2a2a2a; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    #header .logo { font-size: 28px; }
+    #header .title { font-weight: 700; font-size: 18px; }
+    #header .sub { font-size: 12px; color: #888; }
+
+    #chat { flex: 1; overflow-y: auto; padding: 24px 20px; max-width: 760px; width: 100%; margin: 0 auto; }
+
+    .msg { display: flex; margin-bottom: 16px; align-items: flex-start; }
+    .msg.user { justify-content: flex-end; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #2a2a2a; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; margin-right: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #1e3a5f; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; margin-left: 10px; }
+    .bubble { padding: 12px 16px; border-radius: 0 16px 16px 16px; max-width: 80%; font-size: 14px; line-height: 1.6; background: #1e1e1e; border: 1px solid #2a2a2a; color: #e0e0e0; }
+    .msg.user .bubble { border-radius: 16px 0 16px 16px; background: #1a3a5c; border: none; color: #e8f4fd; }
+
+    .typing { color: #888; letter-spacing: 4px; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    #quick-prompts { margin: 8px 0 8px 46px; }
+    #quick-prompts .label { font-size: 12px; color: #666; margin-bottom: 8px; }
+    #quick-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .qbtn { background: #1e1e1e; border: 1px solid #333; border-radius: 20px; padding: 8px 14px; color: #ccc; font-size: 13px; cursor: pointer; }
+    .qbtn:hover { background: #2a2a2a; }
+
+    #input-area { border-top: 1px solid #2a2a2a; background: #1a1a1a; padding: 16px 20px; }
+    #input-wrap { display: flex; gap: 10px; max-width: 760px; margin: 0 auto; align-items: flex-end; }
+    #user-input { flex: 1; background: #0f0f0f; border: 1px solid #333; border-radius: 12px; padding: 12px 16px; color: #f0f0f0; font-size: 14px; resize: none; outline: none; font-family: inherit; line-height: 1.5; }
+    #user-input:focus { border-color: #2563eb; }
+    #send-btn { background: #2563eb; color: white; border: none; border-radius: 12px; width: 44px; height: 44px; font-size: 20px; cursor: pointer; flex-shrink: 0; }
+    #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #hint { font-size: 11px; color: #555; text-align: center; margin-top: 8px; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1a1a1a; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">💰</div>
+  <div>
+    <div class="title">Cash Creators AI</div>
+    <div class="sub">Your offer-building assistant</div>
+  </div>
+</div>
+
+<div id="chat"></div>
+
+<div id="input-area">
+  <div id="input-wrap">
+    <textarea id="user-input" rows="1" placeholder="Ask me anything about your offers, funnels, emails..."></textarea>
+    <button id="send-btn">→</button>
+  </div>
+  <div id="hint">Press Enter to send • Shift+Enter for new line</div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are a helpful AI assistant for Cash Creators — a coaching program that helps creators and coaches build profitable businesses using The Offer Shell, Google Doc Offers, and The Workshop Funnel.
+
+You have deep knowledge of all the resources in this program. Help users create offer docs, plan their 90 days of offers, understand funnels, and grow their business. Always be specific, use numbers, and make answers actionable.
+
+=== THE OFFER SHELL ===
+The Offer Shell monetizes ACCESS, not stuff. 3 Tiers:
+1. HIGH TIER (Core Offer) - Group Coaching. Price: $100-$400/week. Includes: workshops, office hours, community.
+2. LOW TIER (Tool Tier) - Templates, workshops, PDFs. Price: $10-100/week or $50-300 one-time.
+3. TOP TIER (1-on-1) - On-demand calls + DM access. Price: Double your group rate.
+
+2-Step Plan: Make a Front End offer every day + Back End offer every week.
+
+=== GOOGLE DOC OFFER (OFFER FOUR) ===
+1. PROMISE - What they get. Must pass The Meaning Test (same meaning to 2 different people).
+   Bad: "Transform your business" | Good: "Get 3 clients in 30 days without sales calls"
+2. PATH - How you deliver. Frame in HAM not GARLIC.
+   Garlic: "Watch the trainings" | Ham: "Fill the $2,000 Offer Template provided to you"
+   Include: checkpoints, timeframe (min commitment for first win + longer for full transformation)
+3. PRICING - Weekly beats monthly.
+   New: $100-$200/week | Established: $250-$400/week. Raise at every 25% capacity checkpoint.
+4. WHY NOW - Scarcity (cap spots) + Urgency (deadline, price raise).
+
+=== OFFER TYPES ===
+- Core Offer: Weekly workshops + community + office hours
+- Workshop Offer: One-time event, $50-300
+- 1-on-1 Coaching: On-demand calls + DM, double group rate
+- Tool/Asset: Templates, swipe files, scripts, $50-300
+- Compressed Offer: e.g. "$5k in 5 Weeks"
+- Long Term Deals: Annual discount, Buy 2 Get 1 Free, PIF
+
+=== CUSTOMER FUNNEL ===
+Turn leads → customers → clients. 1 customer = 50 leads. 25% of workshop buyers become clients.
+Steps: Create Customer Offer → Package it (Tool name + Promise) → Sell ($50-300) → Deliver → Upsell in 3-7 days.
+
+=== WORKSHOP FUNNEL ===
+Offer Cycle: Week 1: Core Offer | Week 2-3: Workshop | Week 4: Core Offer
+Workshop = Promise + Path + Pricing ($50-300) + Why Now (goes down after event)
+9 upsell touchpoints after workshop. 80% of clients come from workshops.
+
+=== 90 DAYS OF OFFERS ===
+Cycle between Client and Customer Offers (1 week each). Max 3 weeks per offer.
+Recycle best emails every 6-8 weeks. Make at least 1 offer every day.
+
+=== EMAIL TYPES ===
+Value, Insight, Sales emails — rotate daily.
+Scarcity: Limited spots, Bonuses, Never available again.
+Urgency: Price raise, Closing doors, Seasonal urgency.
+
+=== CASH INJECTIONS (11 Types) ===
+1. Workshop  2. Flash Sale  3. Bundle  4. PIF  5. DM Access  6. Long Term Deal
+7. Buy 2 Get 1 Free  8. Credit  9. More Access  10. Seasonal Offers  11. Compressed Offer
+
+=== HOW TO CREATE AN OFFER DOC ===
+Ask the user:
+1. What do you do / what's your expertise?
+2. Who is your ideal client?
+3. What result do you get them?
+4. What's your price range?
+5. Weekly recurring or one-time?
+
+Then create a full Offer Doc with Promise, Path, Pricing, Why Now — customized to their niche. Be specific with numbers. Make the promise pass The Meaning Test.`;
+
+const API_KEY = 'REPLACE_WITH_YOUR_API_KEY';
+
+let messages = [];
+let loading = false;
+
+const chatEl = document.getElementById('chat');
+const inputEl = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+
+const quickPrompts = [
+  '📄 Create my Offer Doc',
+  '🗓️ Plan my 90 Days of Offers',
+  '🛠️ Set up my Offer Shell',
+  '🐳 Help me write Whale Bait content',
+  '📧 Write a sales email',
+  '💬 Write a DM closing script',
+];
+
+function formatText(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
+}
+
+function addMessage(role, content) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+
+  if (role === 'assistant') {
+    div.innerHTML = `<div class="avatar">💰</div><div class="bubble">${formatText(content)}</div>`;
+  } else {
+    div.innerHTML = `<div class="bubble">${formatText(content)}</div><div class="user-avatar">👤</div>`;
+  }
+
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing';
+  div.innerHTML = `<div class="avatar">💰</div><div class="bubble"><span class="typing">● ● ●</span></div>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function showQuickPrompts() {
+  const div = document.createElement('div');
+  div.id = 'quick-prompts';
+  div.innerHTML = `<div class="label">Quick starts:</div><div id="quick-grid">${quickPrompts.map(p => `<button class="qbtn" onclick="usePrompt('${p}')">${p}</button>`).join('')}</div>`;
+  chatEl.appendChild(div);
+}
+
+function usePrompt(text) {
+  document.getElementById('quick-prompts')?.remove();
+  inputEl.value = text;
+  sendMessage();
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || loading) return;
+
+  document.getElementById('quick-prompts')?.remove();
+
+  messages.push({ role: 'user', content: text });
+  addMessage('user', text);
+  inputEl.value = '';
+  loading = true;
+  sendBtn.disabled = true;
+  showTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        messages: messages
+      })
+    });
+
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Something went wrong. Please try again.';
+
+    messages.push({ role: 'assistant', content: reply });
+    removeTyping();
+    addMessage('assistant', reply);
+  } catch (err) {
+    removeTyping();
+    addMessage('assistant', '❌ Error connecting. Please check your API key and try again.');
+  }
+
+  loading = false;
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+// Welcome message
+addMessage('assistant', "Hey! 👋 I'm your Cash Creators AI assistant. I can help you:\n\n**📄 Create your Offer Doc** (Google Doc 314 style)\n**🗓️ Plan your 90 Days of Offers**\n**🛠️ Set up your Offer Shell**\n**🐳 Write Whale Bait content**\n**📧 Write email & DM scripts**\n\nWhat would you like to work on today?");
+showQuickPrompts();
+</script>
+</body>
+</html>
